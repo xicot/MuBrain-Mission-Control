@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MuLabs - Agent Interaction Matrix</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* PASSWORD PROTECTION */
+        #password-gate {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #password-gate.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .gate-container {
+            text-align: center;
+            padding: 40px;
+            background: #151520;
+            border-radius: 16px;
+            border: 1px solid #333;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 400px;
+            width: 90%;
+        }
+        .gate-logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .gate-title {
+            font-size: 1.5em;
+            color: #00ff88;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .gate-subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+        .gate-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1.2em;
+            background: #0a0a0f;
+            border: 2px solid #333;
+            border-radius: 8px;
+            color: #e0e0e0;
+            text-align: center;
+            letter-spacing: 4px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        .gate-input:focus {
+            outline: none;
+            border-color: #00ff88;
+        }
+        .gate-button {
+            width: 100%;
+            padding: 15px;
+            background: #00ff88;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .gate-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,255,136,0.3);
+        }
+        .gate-error {
+            color: #ff4444;
+            margin-top: 15px;
+            font-size: 0.9em;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .gate-error.show {
+            opacity: 1;
+        }
+        .gate-hint {
+            margin-top: 20px;
+            color: #888;
+            font-size: 0.8em;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .header p {
+            color: #8892b0;
+            font-size: 14px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .legend-color.human { background: #ffd700; }
+        .legend-color.ai { background: #00d4ff; }
+        .legend-color.vertical { background: #7b2cbf; }
+        .legend-color.task { background: #ff6b6b; }
+        
+        /* Matrix Grid */
+        .matrix-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+        
+        .interaction-matrix {
+            display: grid;
+            grid-template-columns: 200px repeat(12, minmax(60px, 1fr));
+            gap: 1px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            min-width: 1000px;
+        }
+        
+        .matrix-header {
+            background: rgba(0,212,255,0.2);
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 60px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(0deg);
+        }
+        
+        .matrix-header.human {
+            background: rgba(255,215,0,0.25);
+            color: #ffd700;
+        }
+        
+        .matrix-header.ai {
+            background: rgba(0,212,255,0.2);
+            color: #00d4ff;
+        }
+        
+        .matrix-row-label {
+            background: rgba(123,44,191,0.3);
+            padding: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .matrix-cell {
+            background: rgba(255,255,255,0.03);
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 50px;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .matrix-cell:hover {
+            background: rgba(255,255,255,0.1);
+            transform: scale(1.1);
+        }
+        
+        .matrix-cell .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            position: relative;
+        }
+        
+        .matrix-cell .dot::after {
+            content: attr(data-count);
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff6b6b;
+            color: white;
+            font-size: 9px;
+            padding: 1px 4px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .matrix-cell:hover .dot::after {
+            display: block;
+        }
+        
+        .matrix-cell .dot.primary { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        .matrix-cell .dot.secondary { background: #ffd700; }
+        .matrix-cell .dot.tertiary { background: #ff6b6b; opacity: 0.6; }
+        .matrix-cell .dot.none { background: rgba(255,255,255,0.1); }
+        
+        /* Vertical Cards */
+        .verticals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .vertical-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .vertical-card h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .vertical-card.muhealth { border-left: 4px solid #00ff88; }
+        .vertical-card.muconsultancy { border-left: 4px solid #00d4ff; }
+        .vertical-card.mueducation { border-left: 4px solid #ff6b6b; }
+        .vertical-card.muarts { border-left: 4px solid #9d4edd; }
+        .vertical-card.muwellbeing { border-left: 4px solid #ffd700; }
+        
+        .vertical-card.muhealth h3 { color: #00ff88; }
+        .vertical-card.muconsultancy h3 { color: #00d4ff; }
+        .vertical-card.mueducation h3 { color: #ff6b6b; }
+        .vertical-card.muarts h3 { color: #9d4edd; }
+        .vertical-card.muwellbeing h3 { color: #ffd700; }
+        
+        .interaction-list {
+            list-style: none;
+        }
+        
+        .interaction-list li {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .interaction-list li:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        
+        .flow-arrow {
+            color: #00d4ff;
+            font-size: 16px;
+        }
+        
+        /* Flow Diagram */
+        .flow-section {
+            margin-top: 40px;
+        }
+        
+        .flow-diagram {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+        
+        .flow-stage {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .flow-stage:last-child {
+            margin-bottom: 0;
+        }
+        
+        .flow-actor {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .flow-actor.human { background: rgba(255,215,0,0.2); color: #ffd700; border: 1px solid #ffd700; }
+        .flow-actor.ai { background: rgba(0,212,255,0.2); color: #00d4ff; border: 1px solid #00d4ff; }
+        .flow-actor.system { background: rgba(123,44,191,0.2); color: #9d4edd; border: 1px solid #9d4edd; }
+        
+        .flow-action {
+            color: #8892b0;
+            font-size: 20px;
+        }
+        
+        .flow-desc {
+            color: #8892b0;
+            font-size: 12px;
+            margin-left: auto;
+            max-width: 300px;
+            text-align: right;
+        }
+        
+        /* Task Matrix */
+        .task-matrix {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .task-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 18px;
+            border-left: 3px solid #00d4ff;
+        }
+        
+        .task-card h4 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+        
+        .task-flow {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 12px;
+        }
+        
+        .task-flow span {
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .task-flow .arrow {
+            color: #00d4ff;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .matrix-container {
+                font-size: 10px;
+            }
+            
+            .matrix-header {
+                font-size: 9px;
+                padding: 8px 4px;
+            }
+            
+            .verticals-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .flow-desc {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- PASSWORD PROTECTION GATE -->
+    <div id="password-gate">
+        <div class="gate-container">
+            <div class="gate-logo">🧠</div>
+            <div class="gate-title">Agent Matrix</div>
+            <div class="gate-subtitle">MuLabs Internal - Restricted Access</div>
+            <input type="password" id="gate-code" class="gate-input" placeholder="••••••" maxlength="6">
+            <button class="gate-button" onclick="checkPassword()">Enter</button>
+            <div id="gate-error" class="gate-error">Incorrect code. Please try again.</div>
+            <div class="gate-hint">Restricted access only</div>
+        </div>
+    </div>
+    
+    <script>
+        // Simple password protection (6-digit code)
+        const ACCESS_CODE = '904756';
+        
+        function checkPassword() {
+            const input = document.getElementById('gate-code').value;
+            const error = document.getElementById('gate-error');
+            const gate = document.getElementById('password-gate');
+            
+            if (input === ACCESS_CODE) {
+                sessionStorage.setItem('missionControlAuth', 'true');
+                gate.classList.add('hidden');
+            } else {
+                error.classList.add('show');
+                document.getElementById('gate-code').value = '';
+                setTimeout(() => error.classList.remove('show'), 3000);
+            }
+        }
+        
+        document.getElementById('gate-code').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+        
+        window.addEventListener('load', function() {
+            if (sessionStorage.getItem('missionControlAuth') === 'true') {
+                document.getElementById('password-gate').classList.add('hidden');
+            }
+        });
+    </script>
+    <div class="header">
+        <h1>🕸️ Agent Interaction Matrix</h1>
+        <p>Understanding how humans, AI agents, and verticals interconnect across MuLabs</p>
+    </div>
+    
+    <div class="container">
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color human"></div>
+                <span>Human Team Member</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color ai"></div>
+                <span>AI Agent</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color vertical"></div>
+                <span>Business Vertical</span>
+            </div>
+            <div class="legend-item">
+                <span style="color: #00ff88;">●</span>
+                <span>Primary Interaction</span>
+            </div>
+            <div class="legend-item">
+                <span style="color: #ffd700;">●</span>
+                <span>Secondary Interaction</span>
+            </div>
+            <div class="legend-item">
+                <span style="color: #ff6b6b; opacity: 0.6;">●</span>
+                <span>Tertiary/As-needed</span>
+            </div>
+        </div>
+        
+        <!-- Full Matrix -->
+        <h2 style="margin-bottom: 15px; font-size: 16px; color: #8892b0;">📊 Cross-Vertical Interaction Intensity</h2>
+        <div class="matrix-container">
+            <div class="interaction-matrix">
+                <!-- Header Row -->
+                <div style="background: rgba(0,0,0,0.3);"></div>
+                <div class="matrix-header human">👤 Xico</div>
+                <div class="matrix-header human">👤 Masha</div>
+                <div class="matrix-header human">👤 Rafael</div>
+                <div class="matrix-header human">👤 Vanessa</div>
+                <div class="matrix-header ai">📊 Financial</div>
+                <div class="matrix-header ai">⚖️ Lawyer</div>
+                <div class="matrix-header ai">📰 News Reader</div>
+                <div class="matrix-header ai">✍️ Content</div>
+                <div class="matrix-header ai">🔧 Ops</div>
+                <div class="matrix-header ai">💼 BizDev</div>
+                <div class="matrix-header ai">🔬 Scientific</div>
+                <div class="matrix-header ai">💻 Tech</div>
+                
+                <!-- MuHealth Row -->
+                <div class="matrix-row-label">🩺 MuHealth</div>
+                <div class="matrix-cell"><div class="dot primary" data-count="10+"></div></div>
+                <div class="matrix-cell"><div class="dot primary" data-count="10+"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot primary" data-count="8"></div></div>
+                <div class="matrix-cell"><div class="dot primary" data-count="5"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="2"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot tertiary" data-count="1"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="3"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot tertiary" data-count="1"></div></div>
+                
+                <!-- MuConsultancy Row -->
+                <div class="matrix-row-label">🚀 MuConsultancy</div>
+                <div class="matrix-cell"><div class="dot primary" data-count="8"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="3"></div></div>
+                <div class="matrix-cell"><div class="dot primary" data-count="10+"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="2"></div></div>
+                <div class="matrix-cell"><div class="dot primary" data-count="5"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="4"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="3"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="2"></div></div>
+                <div class="matrix-cell"><div class="dot primary" data-count="6"></div></div>
+                <div class="matrix-cell"><div class="dot primary" data-count="7"></div></div>
+                <div class="matrix-cell"><div class="dot tertiary" data-count="1"></div></div>
+                
+                <!-- MuEducation Row -->
+                <div class="matrix-row-label">🎓 MuEducation</div>
+                <div class="matrix-cell"><div class="dot primary" data-count="10+"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="2"></div></div>
+                <div class="matrix-cell"><div class="dot tertiary" data-count="1"></div></div>
+                <div class="matrix-cell"><div class="dot primary" data-count="10+"></div></div>
+                <div class="matrix-cell"><div class="dot primary" data-count="10+"></div></div>
+                <div class="matrix-cell"><div class="dot tertiary" data-count="1"></div></div>
+                <div class="matrix-cell"><div class="dot tertiary" data-count="1"></div></div>
+                <div class="matrix-cell"><div class="dot primary" data-count="8"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="3"></div></div
+                
+                <!-- MuArts Row -->
+                <div class="matrix-row-label">🎨 MuArts</div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="2"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot tertiary" data-count="1"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="2"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                
+                <!-- MuWellbeing Row -->
+                <div class="matrix-row-label">🧘 MuWellbeing</div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="2"></div></div>
+                <div class="matrix-cell"><div class="dot tertiary" data-count="1"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="3"></div></div>
+                <div class="matrix-cell"><div class="dot tertiary" data-count="1"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="2"></div></div>
+                <div class="matrix-cell"><div class="dot secondary" data-count="2"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+                <div class="matrix-cell"><div class="dot none"></div></div>
+            </div>
+        </div>
+        
+        <!-- Vertical Interaction Cards -->
+        <h2 style="margin-top: 40px; margin-bottom: 15px; font-size: 16px; color: #8892b0;">🏢 Detailed Interactions by Vertical</h2>
+        <div class="verticals-grid">
+            <div class="vertical-card muhealth">
+                <h3>🩺 MuHealth</h3>
+                <ul class="interaction-list">
+                    <li>
+                        <span>👤</span> Xico <span class="flow-arrow">→</span> Clinical lead, QEEG, patient sessions
+                    </li>
+                    <li>
+                        <span>👤</span> Masha <span class="flow-arrow">→</span> Scheduling, invoicing, patient management
+                    </li>
+                    <li>
+                        <span>👤</span> Vanessa <span class="flow-arrow">→</span> Clinical sessions (NFB, QEEG, Somatic)
+                    </li>
+                    <li>
+                        <span>🤖</span> Financial <span class="flow-arrow">→</span> Weekly invoicing, monthly reports
+                    </li>
+                    <li>
+                        <span>🤖</span> Lawyer <span class="flow-arrow">→</span> Patient contracts, consent forms
+                    </li>
+                    <li>
+                        <span>🤖</span> Ops <span class="flow-arrow">→</span> Airtable sync, calendar automation
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="vertical-card muconsultancy">
+                <h3>🚀 MuConsultancy</h3>
+                <ul class="interaction-list">
+                    <li>
+                        <span>👤</span> Xico <span class="flow-arrow">→</span> Strategy, client relationships
+                    </li>
+                    <li>
+                        <span>👤</span> Masha <span class="flow-arrow">→</span> Admin support, documentation
+                    </li>
+                    <li>
+                        <span>👤</span> Rafael <span class="flow-arrow">→</span> Research, data analysis, proposals
+                    </li>
+                    <li>
+                        <span>🤖</span> Lawyer <span class="flow-arrow">→</span> B2B contracts, NDAs
+                    </li>
+                    <li>
+                        <span>🤖</span> BizDev <span class="flow-arrow">→</span> Lead gen, outreach, sales tracking
+                    </li>
+                    <li>
+                        <span>🤖</span> Scientific <span class="flow-arrow">→</span> Research validation, lit reviews
+                    </li>
+                    <li>
+                        <span>🤖</span> Financial <span class="flow-arrow">→</span> Contract pricing, revenue tracking
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="vertical-card mueducation">
+                <h3>🎓 MuEducation</h3>
+                <ul class="interaction-list">
+                    <li>
+                        <span>👤</span> Xico <span class="flow-arrow">→</span> Content strategy, course design
+                    </li>
+                    <li>
+                        <span>🤖</span> Content <span class="flow-arrow">→</span> Blog posts, newsletters, social copies
+                    </li>
+                    <li>
+                        <span>🤖</span> News Reader <span class="flow-arrow">→</span> Daily neuroscience monitoring
+                    </li>
+                    <li>
+                        <span>🤖</span> Scientific <span class="flow-arrow">→</span> Course content validation
+                    </li>
+                    <li>
+                        <span>🤖</span> Tech <span class="flow-arrow">→</span> Platform decisions, infrastructure
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="vertical-card muarts">
+                <h3>🎨 MuArts (Inactive)</h3>
+                <ul class="interaction-list">
+                    <li>
+                        <span>👤</span> Xico <span class="flow-arrow">→</span> Creative direction (paused)
+                    </li>
+                    <li>
+                        <span>🤖</span> Content <span class="flow-arrow">→</span> Art descriptions, exhibition copy
+                    </li>
+                    <li>
+                        <span>🤖</span> News Reader <span class="flow-arrow">→</span> Biodata art trends monitoring
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="vertical-card muwellbeing">
+                <h3>🧘 MuWellbeing (Inactive)</h3>
+                <ul class="interaction-list">
+                    <li>
+                        <span>👤</span> Xico <span class="flow-arrow">→</span> Experience design (paused)
+                    </li>
+                    <li>
+                        <span>👤</span> Masha <span class="flow-arrow">→</span> Booking coordination
+                    </li>
+                    <li>
+                        <span>👤</span> Vanessa <span class="flow-arrow">→</span> Wellness sessions (as needed)
+                    </li>
+                    <li>
+                        <span>🤖</span> News Reader <span class="flow-arrow">→</span> Wellness trends monitoring
+                    </li>
+                    <li>
+                        <span>🤖</span> Content <span class="flow-arrow">→</span> Wellness content creation
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Sample Workflows -->
+        <div class="flow-section">
+            <h2 style="margin-bottom: 15px; font-size: 16px; color: #8892b0;">🔄 All Example Workflows</h2>
+            
+            <div class="flow-diagram">
+                <h3 style="margin-bottom: 20px; color: #00ff88;">Weekly Clinical Reporting</h3>
+                <div class="flow-stage">
+                    <div class="flow-actor system">📅 Calendar System</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor system">🔁 Session Tracker</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">📊 Financial Agent</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor human">👤 Masha</div>
+                    <div class="flow-desc">Auto-generates Friday clinical<br>reports, emails to Masha</div>
+                </div>
+                
+                <h3 style="margin-top: 30px; margin-bottom: 20px; color: #00ff88;">Monthly Clinical Summary</h3>
+                <div class="flow-stage">
+                    <div class="flow-actor system">📊 Session Database</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">📊 Financial Agent</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">📈 Report Generator</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor system">📤 Google Drive</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor human">👤 Xico</div>
+                    <div class="flow-desc">Aggregates month data → reports<br>→ uploads → Xico reviews</div>
+                </div>                <h3 style="margin-top: 30px; margin-bottom: 20px; color: #00d4ff;">News Content Pipeline</h3>
+                <div class="flow-stage">
+                    <div class="flow-actor ai">📰 News Reader</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">🔬 Scientific Advisor</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">✍️ Content Creator</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">📤 Auto Publisher</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor human">👤 Xico</div>
+                    <div class="flow-desc">Daily news scan → validation<br>→ draft → weekly batch → Xico approves/finalizes</div>
+                </div>
+                
+                <h3 style="margin-top: 30px; margin-bottom: 20px; color: #00d4ff;">Course Creation Workflow</h3>
+                <div class="flow-stage">
+                    <div class="flow-actor human">👤 Xico</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">📚 Education Agent</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">🔬 Scientific</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">✍️ Content</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">💻 Tech</div>
+                    <div class="flow-desc">Xico outlines → AI builds modules<br>→ validation → review → platform upload</div>
+                </div>
+                
+                <h3 style="margin-top: 30px; margin-bottom: 20px; color: #ff6b6b;">B2B Consultancy Proposal</h3>
+                <div class="flow-stage">
+                    <div class="flow-actor human">👤 Xico</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">💼 BizDev</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor human">👤 Rafael</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">🔬 Scientific</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">⚖️ Lawyer</div>
+                    <div class="flow-desc">Client outreach → research validation<br>→ proposal → contract review</div>
+                </div>
+                
+                <h3 style="margin-top: 30px; margin-bottom: 20px; color: #ffd700;">New Patient Onboarding</h3>
+                <div class="flow-stage">
+                    <div class="flow-actor human">👤 Xico</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">🔧 Ops</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor human">👤 Masha</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">📊 Financial</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">👩‍⚕️ Scheduler</div>
+                    <div class="flow-desc">Xico qualifies → Ops logs → Masha schedules<br>→ billing setup → calendar blocks</div>
+                </div>
+                
+                <h3 style="margin-top: 30px; margin-bottom: 20px; color: #9d4edd;">Weekly Task Summary</h3>
+                <div class="flow-stage">
+                    <div class="flow-actor system">📋 Airtable</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">🔧 Ops</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">📊 Report Generator</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor human">👤 Xico</div>
+                    <div class="flow-desc">Pulls task data → generates summaries<br>→ emails to Masha & Rafael on Friday</div>
+                </div>
+                
+                <h3 style="margin-top: 30px; margin-bottom: 20px; color: #00ff88;">Emergency Protocol</h3>
+                <div class="flow-stage">
+                    <div class="flow-actor system">⚠️ Alert Trigger</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">🔧 Ops</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">💻 Tech</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor human">👤 Xico</div>
+                    <div class="flow-desc">System detects issue → auto-diagnosis<br>→ attempts fix → escalates to Xico if needed</div>
+                </div>
+            </div>
+        </div>
+                
+                <h3 style="margin-top: 30px; margin-bottom: 20px; color: #ff6b6b;">B2B Consultancy Proposal</h3>
+                <div class="flow-stage">
+                    <div class="flow-actor human">👤 Xico</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">💼 BizDev</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor human">👤 Rafael</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">🔬 Scientific</div>
+                    <span class="flow-action">➜</span>
+                    <div class="flow-actor ai">⚖️ Lawyer</div>
+                    <div class="flow-desc">Client outreach → research validation<br>→ proposal → contract review</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Task-Specific Interactions -->
+        <div class="flow-section">
+            <h2 style="margin-bottom: 15px; font-size: 16px; color: #8892b0;">📋 All Workflow Combinations</h2>
+            
+            <div class="task-matrix">
+                <div class="task-card">
+                    <h4>📧 Friday Clinical Reports</h4>
+                    <div class="task-flow">
+                        <span>📅 Calendar</span>
+                        <span class="arrow">→</span>
+                        <span>🔁 Session Tracker</span>
+                        <span class="arrow">→</span>
+                        <span>📊 Financial</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Masha</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>📰 Newsletter Creation</h4>
+                    <div class="task-flow">
+                        <span>📰 News Reader</span>
+                        <span class="arrow">→</span>
+                        <span>🔬 Scientific</span>
+                        <span class="arrow">→</span>
+                        <span>✍️ Content</span>
+                        <span class="arrow">→</span>
+                        <span>📤 Auto Publisher</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico (approves)</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>📄 B2B Contract</h4>
+                    <div class="task-flow">
+                        <span>👤 Xico</span>
+                        <span class="arrow">→</span>
+                        <span>💼 BizDev</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Rafael</span>
+                        <span class="arrow">→</span>
+                        <span>🔬 Scientific</span>
+                        <span class="arrow">→</span>
+                        <span>⚖️ Lawyer</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico (approves)</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>🎓 Course Content</h4>
+                    <div class="task-flow">
+                        <span>👤 Xico</span>
+                        <span class="arrow">→</span>
+                        <span>📚 Education Agent</span>
+                        <span class="arrow">→</span>
+                        <span>🔬 Scientific</span>
+                        <span class="arrow">→</span>
+                        <span>✍️ Content</span>
+                        <span class="arrow">→</span>
+                        <span>💻 Tech</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico (publishes)</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>📊 Monthly Accounting</h4>
+                    <div class="task-flow">
+                        <span>📊 Financial</span>
+                        <span class="arrow">→</span>
+                        <span>🔧 Ops</span>
+                        <span class="arrow">→</span>
+                        <span>📤 Auto Publisher</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico (reviews)</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>🧠 Research Deep-dive</h4>
+                    <div class="task-flow">
+                        <span>👤 Rafael</span>
+                        <span class="arrow">→</span>
+                        <span>📰 News Reader</span>
+                        <span class="arrow">→</span>
+                        <span>🔬 Scientific</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>🩺 New Patient Onboard</h4>
+                    <div class="task-flow">
+                        <span>👤 Xico</span>
+                        <span class="arrow">→</span>
+                        <span>👩‍⚕️ Vanessa</span>
+                        <span class="arrow">→</span>
+                        <span>🔧 Ops</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Masha</span>
+                        <span class="arrow">→</span>
+                        <span>📊 Financial</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>🎨 Social Media Post</h4>
+                    <div class="task-flow">
+                        <span>📰 News Reader</span>
+                        <span class="arrow">→</span>
+                        <span>✍️ Content</span>
+                        <span class="arrow">→</span>
+                        <span>📤 Auto Publisher</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico (approval)</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>📅 Meeting Prep</h4>
+                    <div class="task-flow">
+                        <span>📅 Calendar</span>
+                        <span class="arrow">→</span>
+                        <span>🧠 Memory Agent</span>
+                        <span class="arrow">→</span>
+                        <span>📰 News Reader</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>🔬 QEEG Analysis Report</h4>
+                    <div class="task-flow">
+                        <span>👤 Xico</span>
+                        <span class="arrow">→</span>
+                        <span>🔬 Scientific</span>
+                        <span class="arrow">→</span>
+                        <span>✍️ Content</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico (review)</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>📈 Lead Generation</h4>
+                    <div class="task-flow">
+                        <span>💼 BizDev</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Rafael</span>
+                        <span class="arrow">→</span>
+                        <span>📰 News Reader</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico</span>
+                    </div>
+                </div>
+                
+                <div class="task-card">
+                    <h4>🛠️ System Alert Response</h4>
+                    <div class="task-flow">
+                        <span>🔧 Ops Monitor</span>
+                        <span class="arrow">→</span>
+                        <span>💻 Tech Agent</span>
+                        <span class="arrow">→</span>
+                        <span>📊 Financial</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico (if critical)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+                        <span>📰 News Reader</span>
+                        <span class="arrow">→</span>
+                        <span>🔬 Scientific</span>
+                        <span class="arrow">→</span>
+                        <span>👤 Xico</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
