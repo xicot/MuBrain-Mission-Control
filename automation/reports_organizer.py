@@ -32,7 +32,8 @@ FOLDER_STRUCTURE = {
     },
     'System': {
         'Daily': None,
-        'Weekly': None
+        'Weekly': None,
+        'Monthly': None
     },
     'Tasks': {
         'Weekly': None,
