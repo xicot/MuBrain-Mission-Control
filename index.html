@@ -627,52 +627,8 @@
     </style>
 </head>
 <body>
-    <!-- PASSWORD PROTECTION GATE -->
-    <div id="password-gate">
-        <div class="gate-container">
-            <div class="gate-logo">🧠</div>
-            <div class="gate-title">Mission Control</div>
-            <div class="gate-subtitle">MuLabs Internal Dashboard</div>
-            <input type="password" id="gate-code" class="gate-input" placeholder="••••••" maxlength="20">
-            <button class="gate-button" onclick="checkPassword()">Enter</button>
-            <div id="gate-error" class="gate-error">Incorrect code. Please try again.</div>
-            <div class="gate-hint">Restricted access only</div>
-        </div>
-    </div>
+<!-- PASSWORD REMOVED - NO LONGER REQUIRED -->
     
-    <script>
-        // Simple password protection (6-digit code)
-        // In production, use proper backend auth. This is client-side only.
-        const ACCESS_CODE = 'Gaiv0tas12345!'; // Change this to your preferred code
-        
-        function checkPassword() {
-            const input = document.getElementById('gate-code').value;
-            const error = document.getElementById('gate-error');
-            const gate = document.getElementById('password-gate');
-            
-            if (input === ACCESS_CODE) {
-                // Store auth in session
-                sessionStorage.setItem('missionControlAuth', 'true');
-                gate.classList.add('hidden');
-            } else {
-                error.classList.add('show');
-                document.getElementById('gate-code').value = '';
-                setTimeout(() => error.classList.remove('show'), 3000);
-            }
-        }
-        
-        // Allow Enter key
-        document.getElementById('gate-code').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') checkPassword();
-        });
-        
-        // Check if already authenticated this session
-        window.addEventListener('load', function() {
-            if (sessionStorage.getItem('missionControlAuth') === 'true') {
-                document.getElementById('password-gate').classList.add('hidden');
-            }
-        });
-    </script>
     <!-- SIDEBAR NAVIGATION -->
     <nav class="sidebar">
         <div class="sidebar-header">
