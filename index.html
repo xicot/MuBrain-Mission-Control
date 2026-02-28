@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>MuBrain Mission Control</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 1.5em;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header .subtitle {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        .nav-tab {
+            padding: 10px 20px;
+            background: #1f1f2e;
+            border-radius: 25px;
+            font-size: 0.9em;
+            white-space: nowrap;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .nav-tab.active {
+            background: #00d4ff;
+            color: #000;
+            font-weight: bold;
+        }
+        
+        .card {
+            background: #151520;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .card-title {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: #00d4ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #333;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .status-label {
+            color: #aaa;
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+        .badge-active { background: #00ff88; color: #000; }
+        .badge-pending { background: #ffaa00; color: #000; }
+        .badge-connected { background: #0088ff; color: #fff; }
+        .badge-error { background: #ff4444; color: #fff; }
+        
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #1f1f2e;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .file-item:hover {
+            background: #2a2a3e;
+        }
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: #2a2a3e;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+        .file-info {
+            flex: 1;
+        }
+        .file-name {
+            font-weight: 500;
+        }
+        .file-desc {
+            font-size: 0.8em;
+            color: #888;
+        }
+        
+        .refresh-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #00d4ff, #00ff88);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .last-update {
+            text-align: center;
+            font-size: 0.75em;
+            color: #666;
+            margin-top: 15px;
+        }
+        
+        .hidden { display: none; }
+        
+        /* Formatted JSON View */
+        .json-view {
+            background: #0f0f1a;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+        .json-key {
+            color: #ff79c6;
+        }
+        .json-string {
+            color: #f1fa8c;
+        }
+        .json-number {
+            color: #bd93f9;
+        }
+        .json-boolean {
+            color: #ff79c6;
+        }
+        .json-null {
+            color: #6272a4;
+        }
+        
+        /* System Status Cards */
+        .system-card {
+            background: #1f1f2e;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #333;
+        }
+        .system-card.active { border-left-color: #00ff88; }
+        .system-card.pending { border-left-color: #ffaa00; }
+        .system-card.connected { border-left-color: #0088ff; }
+        .system-card.error { border-left-color: #ff4444; }
+        
+        .system-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .system-name {
+            font-weight: 600;
+            font-size: 1em;
+        }
+        .system-detail {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        /* Clockify Stats */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .stat-box {
+            background: #1f1f2e;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        .stat-label {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        /* File Content Viewer */
+        .file-viewer {
+            background: #0f0f1a;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .file-viewer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .file-viewer-title {
+            font-weight: 600;
+            color: #00d4ff;
+        }
+        .close-btn {
+            background: #333;
+            border: none;
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        /* Loading Spinner */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        /* Task Cards */
+        .agent-section {
+            background: #151520;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #333;
+        }
+        .agent-section.xico { border-left-color: #f1c40f; }
+        .agent-section.masha { border-left-color: #e84393; }
+        .agent-section.rafael { border-left-color: #00cec9; }
+        .agent-section.mubrain { border-left-color: #00d4ff; }
+        .agent-section.agent { border-left-color: #9b59b6; }
+        
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .agent-name {
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        .agent-count {
+            background: #333;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+        
+        .task-card {
+            background: #1f1f2e;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            border-left: 3px solid #333;
+        }
+        .task-card:hover {
+            background: #2a2a3e;
+            transform: translateX(3px);
+        }
+        .task-card.high { border-left-color: #e74c3c; }
+        .task-card.medium { border-left-color: #f39c12; }
+        .task-card.low { border-left-color: #27ae60; }
+        
+        .task-title {
+            font-weight: 500;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .task-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 0.8em;
+            color: #888;
+        }
+        .task-priority {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+        .priority-H { background: #e74c3c; color: #fff; }
+        .priority-M { background: #f39c12; color: #000; }
+        .priority-L { background: #27ae60; color: #fff; }
+        
+        /* Task Detail Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #151520;
+            border-radius: 20px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+        .modal-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            flex: 1;
+            margin-right: 10px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #2a2a3e;
+        }
+        .detail-label {
+            color: #888;
+            font-size: 0.9em;
+        }
+        .detail-value {
+            font-weight: 500;
+            text-align: right;
+        }
+        .detail-section {
+            margin-top: 15px;
+        }
+        .detail-section-title {
+            color: #00d4ff;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .context-box {
+            background: #1f1f2e;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        .history-item {
+            background: #1f1f2e;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+        }
+        .history-time {
+            color: #666;
+            font-size: 0.8em;
+            margin-bottom: 4px;
+        }
+        .blocker-box {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid #e74c3c;
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        .blocker-title {
+            color: #e74c3c;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 MuBrain Mission Control</h1>
+        <div class="subtitle">Integrated Command Center • Office • Team • Memory</div>
+    </div>
+    
+    <div class="nav-tabs">
+        <div class="nav-tab active" onclick="showTab('dashboard')">Dash</div>
+        <div class="nav-tab" onclick="showTab('system-health')">Health</div>
+        <div class="nav-tab" onclick="showTab('velocity')">Velocity</div>
+        <div class="nav-tab" onclick="showTab('waiting-on')">Waiting</div>
+        <div class="nav-tab" onclick="showTab('budget')">Budget</div>
+        <div class="nav-tab" onclick="showTab('agent-activity')">Agents</div>
+        <div class="nav-tab" onclick="showTab('tasks')">Tasks</div>
+        <div class="nav-tab" onclick="showTab('reports')">Reports</div>
+        <div class="nav-tab" onclick="showTab('files')">Files</div>
+    </div>
+    
+    <!-- Dashboard Tab -->
+    <div id="dashboard" class="tab-content">
+        <div class="card">
+            <div class="card-title">
+                <span>System Status</span>
+                <span style="font-size: 0.7em; color: #888;">Live</span>
+            </div>
+            <div id="system-status-container">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">Clockify Today</div>
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="clockify-hours">-</div>
+                    <div class="stat-label">Hours Tracked</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="clockify-projects">-</div>
+                    <div class="stat-label">Projects</div>
+                </div>
+            </div>
+            <div class="system-detail" style="margin-top: 15px;">
+                Workspace: <span id="clockify-workspace">-</span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">Team Overview</div>
+            <div id="team-container">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tasks Tab -->
+    <div id="tasks" class="tab-content hidden">
+        <div id="tasks-container">
+            <div class="loading">Loading tasks...</div>
+        </div>
+    </div>
+    
+    <!-- Task Detail Modal -->
+    <div id="task-modal" class="modal-overlay hidden" onclick="closeTaskModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-task-title">Task Title</div>
+                <button class="close-btn" onclick="closeTaskModal()">✕</button>
+            </div>
+            <div id="modal-task-details"></div>
+        </div>
+    </div>
+    
+    <!-- Reports Tab -->
+    <div id="reports" class="tab-content hidden">
+        <div class="card">
+            <div class="card-title">
+                <span>🏥 Clinical Reports</span>
+                <span style="font-size: 0.7em; color: #888;">Weekly & Monthly</span>
+            </div>
+            <div class="system-detail" style="margin-bottom: 15px;">
+                Session summaries, invoicing, and facilitator payments
+            </div>
+            <div class="file-list">
+                <div class="file-item" onclick="openGoogleDrive()">
+                    <div class="file-icon" style="background: #e74c3c;">📁</div>
+                    <div class="file-info">
+                        <div class="file-name">Open Google Drive Folder</div>
+                        <div class="file-desc">View all clinical reports</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">
+                <span>💰 Financial Reports</span>
+                <span style="font-size: 0.7em; color: #888;">Weekly & Monthly</span>
+            </div>
+            <div class="system-detail" style="margin-bottom: 15px;">
+                AI costs, clinical revenue, and net position
+            </div>
+            <div class="file-list">
+                <div class="file-item" onclick="openGoogleDrive()">
+                    <div class="file-icon" style="background: #27ae60;">📁</div>
+                    <div class="file-info">
+                        <div class="file-name">Open Google Drive Folder</div>
+                        <div class="file-desc">View all financial reports</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">📊 This Week Summary</div>
+            <div id="weekly-summary">
+                <div class="system-detail">Reports are generated automatically:</div>
+                <div class="system-card" style="margin-top: 10px;">
+                    <div class="system-detail">• Clinical: Fridays 5 PM</div>
+                    <div class="system-detail">• Financial: Sundays 6 PM</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Health Tab -->
+    <div id="system-health" class="tab-content hidden">
+        <div class="card">
+            <div class="card-title">
+                <span>System Health Status</span>
+                <span style="font-size: 0.7em; color: #888;">Real-time</span>
+            </div>
+            <div id="system-health-container">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Team Velocity Tab -->
+    <div id="velocity" class="tab-content hidden">
+        <div class="card">
+            <div class="card-title">
+                <span>Team Velocity & Performance</span>
+                <span style="font-size: 0.7em; color: #888;">Weekly metrics</span>
+            </div>
+            <div id="velocity-container">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Waiting On Tab -->
+    <div id="waiting-on" class="tab-content hidden">
+        <div class="card">
+            <div class="card-title">
+                <span>Blocked Tasks & Dependencies</span>
+                <span style="font-size: 0.7em; color: #888;">Waiting >2 days</span>
+            </div>
+            <div id="waiting-on-container">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Budget Tab -->
+    <div id="budget" class="tab-content hidden">
+        <div class="card">
+            <div class="card-title">
+                <span>Cost Tracking & Budget</span>
+                <span style="font-size: 0.7em; color: #888;">Token spend</span>
+            </div>
+            <div id="budget-container">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Agent Activity Tab -->
+    <div id="agent-activity" class="tab-content hidden">
+        <div class="card">
+            <div class="card-title">
+                <span>AI Agent Coordination</span>
+                <span style="font-size: 0.7em; color: #888;">Proposals & decisions</span>
+            </div>
+            <div id="agent-activity-container">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Files Tab -->
+    <div id="files" class="tab-content hidden">
+        <div class="card">
+            <div class="card-title">Browse Files</div>
+            <div class="file-list">
+                <div class="file-item" onclick="viewFile('system-status.json', 'status/system-status.json')">
+                    <div class="file-icon">📊</div>
+                    <div class="file-info">
+                        <div class="file-name">system-status.json</div>
+                        <div class="file-desc">Overall system health</div>
+                    </div>
+                </div>
+                <div class="file-item" onclick="viewFile('clockify.json', 'status/clockify.json')">
+                    <div class="file-icon">⏱️</div>
+                    <div class="file-info">
+                        <div class="file-name">clockify.json</div>
+                        <div class="file-desc">Time tracking data</div>
+                    </div>
+                </div>
+                <div class="file-item" onclick="viewFile('team-velocity.json', 'memory/team-velocity.json')">
+                    <div class="file-icon">📈</div>
+                    <div class="file-info">
+                        <div class="file-name">team-velocity.json</div>
+                        <div class="file-desc">Task completion stats</div>
+                    </div>
+                </div>
+                <div class="file-item" onclick="viewFile('heartbeat-state.json', 'memory/heartbeat-state.json')">
+                    <div class="file-icon">💓</div>
+                    <div class="file-info">
+                        <div class="file-name">heartbeat-state.json</div>
+                        <div class="file-desc">System checks</div>
+                    </div>
+                </div>
+                <div class="file-item" onclick="viewFile('cost-tracker.json', 'memory/cost-tracker.json')">
+                    <div class="file-icon">💰</div>
+                    <div class="file-info">
+                        <div class="file-name">cost-tracker.json</div>
+                        <div class="file-desc">AI costs tracking</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- File Viewer -->
+        <div id="file-viewer" class="file-viewer hidden">
+            <div class="file-viewer-header">
+                <span class="file-viewer-title" id="viewer-filename">File</span>
+                <button class="close-btn" onclick="closeViewer()">✕ Close</button>
+            </div>
+            <div id="viewer-content"></div>
+        </div>
+    </div>
+    
+    <!-- Raw Data Tab -->
+    <div id="raw" class="tab-content hidden">
+        <div class="card">
+            <div class="card-title">System Status (Raw JSON)</div>
+            <div id="raw-system-status" class="json-view">Loading...</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Clockify (Raw JSON)</div>
+            <div id="raw-clockify" class="json-view">Loading...</div>
+        </div>
+    </div>
+    
+    <button class="refresh-btn" onclick="loadAllData()">🔄 Refresh All Data</button>
+    <div class="last-update" id="last-update">Last updated: Never</div>
+
+    <script>
+        // Data paths - relative to OneDrive/MuBrain folder
+        const DATA_PATHS = {
+            systemStatus: 'status/system-status.json',
+            systemHealth: 'status/system-health.json',
+            clockify: 'status/clockify.json',
+            teamVelocity: 'memory/team-velocity.json',
+            heartbeat: 'memory/heartbeat-state.json',
+            costTracker: 'status/cost-tracking.json',
+            waitingOn: 'memory/waiting-on.json',
+            agentActivity: 'status/agent-coordination.json'
+        };
+        
+        let cachedData = {};
+        
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.remove('hidden');
+            event.target.classList.add('active');
+        }
+        
+        function openGoogleDrive() {
+            // Google Drive folder: MuBrain Bot Reports
+            window.open('https://drive.google.com/drive/folders/1BFb4hGU4sBjExV6MTv6m64F8OPnN85bI', '_blank');
+        }
+        
+        function getStatusClass(status) {
+            if (status === 'ACTIVE' || status === 'CONNECTED') return 'active';
+            if (status === 'PENDING_SETUP') return 'pending';
+            return 'error';
+        }
+        
+        function getStatusBadge(status) {
+            if (status === 'ACTIVE' || status === 'CONNECTED') 
+                return '<span class="status-badge badge-active">' + status + '</span>';
+            if (status === 'PENDING_SETUP') 
+                return '<span class="status-badge badge-pending">PENDING</span>';
+            return '<span class="status-badge badge-error">' + status + '</span>';
+        }
+        
+        function formatSystemStatus(data) {
+            const container = document.getElementById('system-status-container');
+            if (!data || !data.systems) {
+                container.innerHTML = '<div class="system-detail">No data available</div>';
+                return;
+            }
+            
+            let html = '';
+            for (const [name, info] of Object.entries(data.systems)) {
+                const statusClass = getStatusClass(info.status);
+                const formattedName = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                
+                html += `
+                    <div class="system-card ${statusClass}">
+                        <div class="system-header">
+                            <span class="system-name">${formattedName}</span>
+                            ${getStatusBadge(info.status)}
+                        </div>
+                        ${info.details ? `<div class="system-detail">${info.details}</div>` : ''}
+                        ${info.next_run ? `<div class="system-detail">Next: ${info.next_run}</div>` : ''}
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+        
+        function formatClockify(data) {
+            if (!data) return;
+            document.getElementById('clockify-hours').textContent = (data.today_hours || 0).toFixed(1);
+            document.getElementById('clockify-projects').textContent = data.projects || 5;
+            document.getElementById('clockify-workspace').textContent = data.workspace || 'MuLabs';
+        }
+        
+        function formatTeamVelocity(data) {
+            const container = document.getElementById('team-container');
+            if (!data) {
+                container.innerHTML = '<div class="system-detail">No data available</div>';
+                return;
+            }
+            
+            let html = '';
+            if (data.masha) {
+                html += `
+                    <div class="system-card">
+                        <div class="system-header">
+                            <span class="system-name">👩‍💼 Masha</span>
+                            <span class="status-badge badge-active">${data.masha.progress || 0}%</span>
+                        </div>
+                        <div class="system-detail">Tasks: ${data.masha.completed || 0}/${data.masha.total || 0}</div>
+                    </div>
+                `;
+            }
+            if (data.rafael) {
+                html += `
+                    <div class="system-card">
+                        <div class="system-header">
+                            <span class="system-name">👨‍🔬 Rafael</span>
+                            <span class="status-badge badge-active">${data.rafael.progress || 0}%</span>
+                        </div>
+                        <div class="system-detail">Tasks: ${data.rafael.completed || 0}/${data.rafael.total || 0}</div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html || '<div class="system-detail">No team data</div>';
+        }
+        
+        function syntaxHighlight(json) {
+            if (!json) return '';
+            const str = JSON.stringify(json, null, 2);
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/(".*?"):/g, '<span class="json-key">$1</span>:')
+                .replace(/: (".*?")/g, ': <span class="json-string">$1</span>')
+                .replace(/: (\d+)/g, ': <span class="json-number">$1</span>')
+                .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>')
+                .replace(/: (null)/g, ': <span class="json-null">$1</span>');
+        }
+        
+        function viewFile(filename, path) {
+            const viewer = document.getElementById('file-viewer');
+            const content = document.getElementById('viewer-content');
+            const title = document.getElementById('viewer-filename');
+            
+            title.textContent = filename;
+            content.innerHTML = '<div class="loading">Loading...</div>';
+            viewer.classList.remove('hidden');
+            
+            fetch('./' + path)
+                .then(r => r.json())
+                .then(data => {
+                    content.innerHTML = '<pre style="margin:0;white-space:pre-wrap;word-break:break-word;">' + syntaxHighlight(data) + '</pre>';
+                })
+                .catch(e => {
+                    content.innerHTML = '<div style="color:#ff4444;">Error loading file: ' + e.message + '</div>';
+                });
+        }
+        
+        function closeViewer() {
+            document.getElementById('file-viewer').classList.add('hidden');
+        }
+        
+        async function loadAllData() {
+            document.getElementById('last-update').textContent = 'Loading...';
+            
+            try {
+                // Load all files in parallel
+                const [systemRes, healthRes, clockifyRes, teamRes, costRes, waitingRes, agentRes] = await Promise.all([
+                    fetch(DATA_PATHS.systemStatus),
+                    fetch(DATA_PATHS.systemHealth),
+                    fetch(DATA_PATHS.clockify),
+                    fetch(DATA_PATHS.teamVelocity),
+                    fetch(DATA_PATHS.costTracker),
+                    fetch(DATA_PATHS.waitingOn),
+                    fetch(DATA_PATHS.agentActivity)
+                ]);
+                
+                // Parse JSON
+                const systemData = systemRes.ok ? await systemRes.json() : null;
+                const healthData = healthRes.ok ? await healthRes.json() : null;
+                const clockifyData = clockifyRes.ok ? await clockifyRes.json() : null;
+                const teamData = teamRes.ok ? await teamRes.json() : null;
+                const costData = costRes.ok ? await costRes.json() : null;
+                const waitingData = waitingRes.ok ? await waitingRes.json() : null;
+                const agentData = agentRes.ok ? await agentRes.json() : null;
+                
+                // Cache data
+                cachedData = { 
+                    system: systemData, 
+                    health: healthData,
+                    clockify: clockifyData, 
+                    team: teamData,
+                    cost: costData,
+                    waiting: waitingData,
+                    agent: agentData
+                };
+                
+                // Update Dashboard tab
+                formatSystemStatus(systemData);
+                formatClockify(clockifyData);
+                formatTeamVelocity(teamData);
+                
+                // Update new tabs
+                formatSystemHealth(healthData);
+                formatVelocityDetail(teamData);
+                formatWaitingOn(waitingData);
+                formatBudget(costData);
+                formatAgentActivity(agentData);
+                
+                // Update Raw tab
+                document.getElementById('raw-system-status').innerHTML = syntaxHighlight(systemData);
+                document.getElementById('raw-clockify').innerHTML = syntaxHighlight(clockifyData);
+                
+                // Update timestamp
+                document.getElementById('last-update').textContent = 
+                    'Last updated: ' + new Date().toLocaleTimeString();
+                    
+            } catch (e) {
+                console.error('Error loading data:', e);
+                document.getElementById('last-update').textContent = 
+                    'Error loading data - files may not be synced yet';
+            }
+        }
+        
+        // Render System Health
+        function formatSystemHealth(data) {
+            const container = document.getElementById('system-health-container');
+            if (!data || !data.automations) {
+                container.innerHTML = '<div class="system-detail">No data available</div>';
+                return;
+            }
+            
+            let html = '';
+            for (const [name, info] of Object.entries(data.automations)) {
+                const statusClass = info.status === 'OK' ? 'active' : info.status === 'PENDING' ? 'pending' : 'error';
+                const formattedName = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                
+                html += `
+                    <div class="system-card ${statusClass}">
+                        <div class="system-header">
+                            <span class="system-name">${formattedName}</span>
+                            ${getStatusBadge(info.status)}
+                        </div>
+                        ${info.last_run ? `<div class="system-detail">Last run: ${info.last_run}</div>` : ''}
+                        ${info.error ? `<div class="system-detail" style="color:#ff4444;">Error: ${info.error}</div>` : ''}
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+        
+        // Render Team Velocity
+        function formatVelocityDetail(data) {
+            const container = document.getElementById('velocity-container');
+            if (!data) {
+                container.innerHTML = '<div class="system-detail">No data available</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            // Weekly stats
+            if (data.weekly_stats) {
+                html += '<div class="card" style="background:none; padding:0; margin-bottom:15px;">';
+                html += '<div class="card-title" style="color:#888; margin-bottom:10px;">Weekly Summary</div>';
+                
+                for (const [person, stats] of Object.entries(data.weekly_stats)) {
+                    const emoji = person === 'Masha' ? '👩‍💼' : person === 'Rafael' ? '👨‍🔬' : '👤';
+                    const completion = Math.round((stats.completed / (stats.total || 1)) * 100);
+                    
+                    html += `
+                        <div class="system-card">
+                            <div class="system-header">
+                                <span class="system-name">${emoji} ${person}</span>
+                                <span class="status-badge badge-active">${completion}%</span>
+                            </div>
+                            <div class="system-detail">${stats.completed}/${stats.total} tasks completed</div>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+            }
+            
+            // Category breakdown
+            if (data.by_category) {
+                html += '<div class="card" style="background:none; padding:0;">';
+                html += '<div class="card-title" style="color:#888; margin-bottom:10px;">By Category</div>';
+                
+                for (const [category, count] of Object.entries(data.by_category)) {
+                    html += `
+                        <div class="status-item">
+                            <span class="status-label">${category}</span>
+                            <span class="status-badge badge-connected">${count}</span>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+            }
+            
+            container.innerHTML = html || '<div class="system-detail">No velocity data</div>';
+        }
+        
+        // Render Waiting On
+        function formatWaitingOn(data) {
+            const container = document.getElementById('waiting-on-container');
+            if (!data || !data.blocked_tasks || data.blocked_tasks.length === 0) {
+                container.innerHTML = '<div class="system-detail">No blocked tasks - everything is flowing!</div>';
+                return;
+            }
+            
+            let html = '';
+            data.blocked_tasks.forEach(task => {
+                const daysWaiting = Math.floor((new Date() - new Date(task.blocked_since)) / (1000 * 60 * 60 * 24));
+                
+                html += `
+                    <div class="system-card" style="border-left-color:#ff4444;">
+                        <div class="system-header">
+                            <span class="system-name">${task.title}</span>
+                            <span class="status-badge badge-error">${daysWaiting}d waiting</span>
+                        </div>
+                        <div class="system-detail">Assigned to: ${task.assignee}</div>
+                        <div class="system-detail">Waiting for: <strong>${task.waiting_for}</strong></div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Render Budget
+        function formatBudget(data) {
+            const container = document.getElementById('budget-container');
+            if (!data) {
+                container.innerHTML = '<div class="system-detail">No budget data available</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            // Current month spending
+            if (data.current_month) {
+                const percent = Math.min((data.current_month.spent / data.current_month.budget) * 100, 100);
+                const color = percent > 80 ? '#ff4444' : percent > 50 ? '#ffaa00' : '#00ff88';
+                
+                html += `
+                    <div class="card" style="background:none; padding:0; margin-bottom:15px;">
+                        <div class="card-title" style="color:#888; margin-bottom:10px;">Monthly Budget</div>
+                        <div style="background:#1f1f2e; padding:15px; border-radius:10px; margin-bottom:10px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                                <span>Spent vs Budget</span>
+                                <span style="color:${color}; font-weight:bold;">${percent.toFixed(0)}%</span>
+                            </div>
+                            <div style="width:100%; height:8px; background:#333; border-radius:4px; overflow:hidden;">
+                                <div style="width:${percent}%; height:100%; background:${color};"></div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.85em; color:#888;">
+                                <span>$${data.current_month.spent.toFixed(2)}</span>
+                                <span>$${data.current_month.budget.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Model breakdown
+            if (data.by_model) {
+                html += '<div class="card" style="background:none; padding:0;">';
+                html += '<div class="card-title" style="color:#888; margin-bottom:10px;">By Model</div>';
+                
+                for (const [model, cost] of Object.entries(data.by_model)) {
+                    html += `
+                        <div class="status-item">
+                            <span class="status-label">${model}</span>
+                            <span class="status-badge badge-connected">$${cost.toFixed(2)}</span>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+            }
+            
+            container.innerHTML = html || '<div class="system-detail">No budget data</div>';
+        }
+        
+        // Render Agent Activity
+        function formatAgentActivity(data) {
+            const container = document.getElementById('agent-activity-container');
+            if (!data) {
+                container.innerHTML = '<div class="system-detail">No agent activity yet</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            // Pending proposals
+            if (data.pending_proposals && data.pending_proposals.length > 0) {
+                html += '<div class="card" style="background:none; padding:0; margin-bottom:15px;">';
+                html += '<div class="card-title" style="color:#888; margin-bottom:10px;">Pending Proposals</div>';
+                
+                data.pending_proposals.forEach(proposal => {
+                    html += `
+                        <div class="system-card" style="border-left-color:#00d4ff;">
+                            <div class="system-header">
+                                <span class="system-name">${proposal.title}</span>
+                                <span class="status-badge badge-pending">REVIEW</span>
+                            </div>
+                            <div class="system-detail">Cost: $${proposal.cost.toFixed(2)} | Savings: $${proposal.savings.toFixed(2)}/mo</div>
+                            <div class="system-detail">ROI: ${proposal.payback_days} days</div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+            
+            // Approved improvements
+            if (data.approved && data.approved.length > 0) {
+                html += '<div class="card" style="background:none; padding:0;">';
+                html += '<div class="card-title" style="color:#888; margin-bottom:10px;">Approved & Implemented</div>';
+                
+                data.approved.forEach(item => {
+                    html += `
+                        <div class="system-card" style="border-left-color:#00ff88;">
+                            <div class="system-header">
+                                <span class="system-name">${item.title}</span>
+                                <span class="status-badge badge-active">DONE</span>
+                            </div>
+                            <div class="system-detail">Saved: $${item.actual_savings.toFixed(2)} since implementation</div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+            
+            if (!html) {
+                html = '<div class="system-detail">No agent activity recorded</div>';
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // Load data on startup
+        loadAllData();
+        loadTasks();
+        
+        // Task Functions
+        async function loadTasks() {
+            try {
+                const res = await fetch('memory/task-board.json');
+                const data = res.ok ? await res.json() : null;
+                if (data && data.tasks) {
+                    renderTasks(data.tasks);
+                } else {
+                    document.getElementById('tasks-container').innerHTML = 
+                        '<div class="loading">No tasks found</div>';
+                }
+            } catch (e) {
+                console.error('Error loading tasks:', e);
+                document.getElementById('tasks-container').innerHTML = 
+                    '<div class="loading">Error loading tasks</div>';
+            }
+        }
+        
+        function renderTasks(tasks) {
+            const container = document.getElementById('tasks-container');
+            
+            // Group tasks by assignee
+            const byAssignee = {};
+            const assigneeOrder = ['Xico', 'Masha', 'Rafael', 'MuBrain'];
+            
+            tasks.forEach(task => {
+                const assignee = task.assignee || 'Unassigned';
+                // Group AI agents together
+                const key = assignee.includes('Agent') ? 'AI Agents' : assignee;
+                if (!byAssignee[key]) byAssignee[key] = [];
+                byAssignee[key].push(task);
+            });
+            
+            // Sort tasks: Todo/Doing first, then by priority
+            Object.keys(byAssignee).forEach(key => {
+                byAssignee[key].sort((a, b) => {
+                    const statusOrder = { 'Todo': 0, 'Doing': 1, 'Review': 2, 'Done': 3, 'Backlog': 4 };
+                    const priorityOrder = { 'High': 0, 'Medium': 1, 'Low': 2 };
+                    if (statusOrder[a.status] !== statusOrder[b.status]) {
+                        return statusOrder[a.status] - statusOrder[b.status];
+                    }
+                    return priorityOrder[a.priority] - priorityOrder[b.priority];
+                });
+            });
+            
+            let html = '';
+            
+            // Define order and colors
+            const agentConfig = {
+                'Xico': { emoji: '👨‍💼', color: 'xico' },
+                'Masha': { emoji: '⚡', color: 'masha' },
+                'Rafael': { emoji: '👨‍🔬', color: 'rafael' },
+                'MuBrain': { emoji: '🤖', color: 'mubrain' },
+                'AI Agents': { emoji: '🔮', color: 'agent' }
+            };
+            
+            // Render in specific order
+            [...assigneeOrder, 'AI Agents', 'Unassigned'].forEach(assignee => {
+                if (!byAssignee[assignee] || byAssignee[assignee].length === 0) return;
+                
+                const config = agentConfig[assignee] || { emoji: '👤', color: '' };
+                const activeTasks = byAssignee[assignee].filter(t => t.status !== 'Done').length;
+                
+                html += `
+                    <div class="agent-section ${config.color}">
+                        <div class="agent-header">
+                            <span class="agent-name">${config.emoji} ${assignee}</span>
+                            <span class="agent-count">${activeTasks} active</span>
+                        </div>
+                `;
+                
+                byAssignee[assignee].forEach(task => {
+                    const priorityClass = task.priority === 'High' ? 'high' : 
+                                         task.priority === 'Medium' ? 'medium' : 'low';
+                    const priorityBadge = task.priority === 'High' ? 'H' : 
+                                          task.priority === 'Medium' ? 'M' : 'L';
+                    const statusEmoji = task.status === 'Done' ? '✅' :
+                                       task.status === 'Doing' ? '🔄' :
+                                       task.status === 'Todo' ? '⏳' :
+                                       task.status === 'Blocked' ? '🚫' : '📋';
+                    
+                    html += `
+                        <div class="task-card ${priorityClass}" onclick='showTaskDetail(${JSON.stringify(task).replace(/'/g, "&#39;")})'>
+                            <div class="task-title">
+                                <span>${statusEmoji} ${task.title}</span>
+                                <span class="task-priority priority-${priorityBadge}">${priorityBadge}</span>
+                            </div>
+                            <div class="task-meta">
+                                <span>${task.status}</span>
+                                ${task.due_date ? `<span>📅 ${task.due_date}</span>` : ''}
+                                ${task.category ? `<span>🏷️ ${task.category}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            });
+            
+            container.innerHTML = html || '<div class="loading">No tasks found</div>';
+        }
+        
+        function showTaskDetail(task) {
+            const modal = document.getElementById('task-modal');
+            const title = document.getElementById('modal-task-title');
+            const details = document.getElementById('modal-task-details');
+            
+            title.textContent = task.title;
+            
+            let html = '';
+            
+            // Basic details
+            html += `
+                <div class="detail-row">
+                    <span class="detail-label">Assignee</span>
+                    <span class="detail-value">${task.assignee || 'Unassigned'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value">${task.status}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Priority</span>
+                    <span class="detail-value">${task.priority}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Category</span>
+                    <span class="detail-value">${task.category || '-'}</span>
+                </div>
+            `;
+            
+            if (task.due_date) {
+                html += `
+                    <div class="detail-row">
+                        <span class="detail-label">Due Date</span>
+                        <span class="detail-value">${task.due_date}</span>
+                    </div>
+                `;
+            }
+            
+            if (task.time_spent_minutes) {
+                html += `
+                    <div class="detail-row">
+                        <span class="detail-label">Time Spent</span>
+                        <span class="detail-value">${task.time_spent_minutes} min</span>
+                    </div>
+                `;
+            }
+            
+            // Context/Description
+            if (task.context) {
+                html += `
+                    <div class="detail-section">
+                        <div class="detail-section-title">Description</div>
+                        <div class="context-box">${task.context}</div>
+                    </div>
+                `;
+            }
+            
+            // Blocker
+            if (task.blocker_reason) {
+                html += `
+                    <div class="detail-section">
+                        <div class="blocker-box">
+                            <div class="blocker-title">🚫 Blocker</div>
+                            <div>${task.blocker_reason}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Tags
+            if (task.tags && task.tags.length > 0) {
+                html += `
+                    <div class="detail-section">
+                        <div class="detail-section-title">Tags</div>
+                        <div class="context-box">${task.tags.join(', ')}</div>
+                    </div>
+                `;
+            }
+            
+            // History
+            if (task.history && task.history.length > 0) {
+                html += `
+                    <div class="detail-section">
+                        <div class="detail-section-title">History</div>
+                `;
+                task.history.slice().reverse().forEach(h => {
+                    const date = new Date(h.timestamp).toLocaleDateString();
+                    html += `
+                        <div class="history-item">
+                            <div class="history-time">${date} • ${h.action}</div>
+                            <div>${h.details}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            
+            details.innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+        
+        function closeTaskModal(event) {
+            if (!event || event.target.id === 'task-modal') {
+                document.getElementById('task-modal').classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
