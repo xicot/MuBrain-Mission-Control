@@ -633,7 +633,7 @@
             <div class="gate-logo">🧠</div>
             <div class="gate-title">Mission Control</div>
             <div class="gate-subtitle">MuLabs Internal Dashboard</div>
-            <input type="password" id="gate-code" class="gate-input" placeholder="••••••" maxlength="6">
+            <input type="password" id="gate-code" class="gate-input" placeholder="••••••" maxlength="20">
             <button class="gate-button" onclick="checkPassword()">Enter</button>
             <div id="gate-error" class="gate-error">Incorrect code. Please try again.</div>
             <div class="gate-hint">Restricted access only</div>
@@ -643,7 +643,7 @@
     <script>
         // Simple password protection (6-digit code)
         // In production, use proper backend auth. This is client-side only.
-        const ACCESS_CODE = 'Gaiv0tas!'; // Change this to your preferred code
+        const ACCESS_CODE = 'Gaiv0tas12345!'; // Change this to your preferred code
         
         function checkPassword() {
             const input = document.getElementById('gate-code').value;
