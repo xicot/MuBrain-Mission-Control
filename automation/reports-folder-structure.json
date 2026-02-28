@@ -1,0 +1,37 @@
+{
+  "Clinical": {
+    "id": "1levfyJ8ryxnZCsgfvPAYih2-PSqfk7jI",
+    "subfolders": {
+      "Weekly": "1vVbKkyG-RiZJmm7V8C9aMY_bEAryUuNz",
+      "Monthly": "1HtUut69hflpzcB4LBfU8BlqojOsJtLdT"
+    }
+  },
+  "Financial": {
+    "id": "1kLpAwp4IobiHj6l-9QP2ZriZ_XTsBK0f",
+    "subfolders": {
+      "Weekly": "1IiY36zS-sDeIn0uN3S6lhWOx5AFbi62D",
+      "Monthly": "1goxVU_YpaX7-0ZtqB1MzkjuKSeKlm7PN"
+    }
+  },
+  "System": {
+    "id": "1VzBtQs2AE8gNq4B1oQmPKUE1UhtHBEz5",
+    "subfolders": {
+      "Daily": "1DNh9jmFNimQQd6-jkGSYVYa-IYqBj7GY",
+      "Weekly": "137kNNaSrzlfcdnt04cdSCQYX3ocpaMAz"
+    }
+  },
+  "Tasks": {
+    "id": "1us6qHIW_kvXpGPu9VMaFgxkrj63U3Yki",
+    "subfolders": {
+      "Weekly": "1oEMkS3avRFAuIzjh1C55mSI35PbyQ290",
+      "Monthly": "1_-4c8zE8NURR3eIiBG0K_WUrcMMrgjj-"
+    }
+  },
+  "Marketing": {
+    "id": "1vDpIXLdTGud2FK__9ODaVGOGPROB8Btr",
+    "subfolders": {
+      "Weekly": "1-eI3TMwcFW0hvF0d4GMmUEizHBPe1Yyv",
+      "Monthly": "1ADoNtmJLLP-XUn-e1EVf6Pq_fMrGHmyS"
+    }
+  }
+}
